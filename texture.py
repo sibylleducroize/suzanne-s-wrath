@@ -18,6 +18,7 @@ class Texture:
                             0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, tex.tobytes())
             GL.glTexParameteri(tex_type, GL.GL_TEXTURE_WRAP_S, wrap_mode)
             GL.glTexParameteri(tex_type, GL.GL_TEXTURE_WRAP_T, wrap_mode)
+            GL.glTexParameteri(tex_type, GL.GL_TEXTURE_WRAP_R, wrap_mode)
             GL.glTexParameteri(tex_type, GL.GL_TEXTURE_MIN_FILTER, min_filter)
             GL.glTexParameteri(tex_type, GL.GL_TEXTURE_MAG_FILTER, mag_filter)
             GL.glGenerateMipmap(tex_type)
