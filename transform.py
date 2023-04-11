@@ -23,6 +23,9 @@ def normalized(vector):
     norm = math.sqrt(sum(vector*vector))
     return vector / norm if norm > 0. else vector
 
+def normal_vec(a, b, c):
+    """ returns the normal vector to the triangle defined by a, b and c """
+    return normalized(np.cross(b - a, c - a))
 
 def lerp(point_a, point_b, fraction):
     """ linear interpolation between two quantities with linear operators """
