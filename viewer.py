@@ -6,7 +6,7 @@ import glfw                         # lean window system wrapper for OpenGL
 import numpy as np                  # all matrix manipulations & OpenGL args
 from core import Shader, Viewer, Mesh, load
 from texture import Texture, Textured
-from transform import normalized
+from transform import normalized, normal_vec
 from math import exp
 
 from land_gen import make_random_grid, perlin
@@ -54,6 +54,7 @@ class HeightMap(Mesh):
         dim = grid.shape
         dimax = max(dim) - 1
         ratio = 2 / dimax
+        dim_total = dim[0] * dim[1]
 
         vertex_list = []
         for i in range(dim[0]):
@@ -84,35 +85,31 @@ class HeightMap(Mesh):
                     dx = (dx + dp + 1) % 2
                     dy = (dy + dp) % 2
 
-        index = np.array(tuple(index_list), np.uint32)
+        index = np.array(index_list, np.uint32)
         
-        normal_list = []
-        for i in range(dim[0]):
-            for j in range(dim[1]):
-                a = np.array((0, 0, 0), np.float32)
-                pt = position[i * dim[1] + j]
-                for k in range(-1, 2, 2):
-                    x = i + k
-                    y = j + k
-                    if x // dim[0] == 0:
-                        aux = normalized(k * position[x * dim[1] + j] - k * pt)
-                        a[0] -= aux[2]
-                        a[2] += aux[0]
-                    if y // dim[1] == 0:
-                        aux = normalized(k * position[i * dim[1] + y] - k * pt)
-                        a[1] -= aux[2]
-                        a[2] += aux[1]
-                normal_list.append(normalized(a))
+        normal = np.ndarray((dim_total, 3), np.float32)
+        for i in range(dim_total):
+            normal[i] = np.array((0, 0, 0), np.float32)
 
-        normal = np.array(normal_list, np.float32)
-
+        for i in range(len(index) // 3):
+            triangle = []
+            for j in range(3):
+                triangle.append(position[index[3 * i + j]])
+            
+            triangle_normal = normal_vec(triangle[0], triangle[1], triangle[2])
+            for j in range(3):
+                normal[index[3 * i + j]] += triangle_normal
+        
+        for i in range(dim_total):
+            normal[i] = normalized(normal[i])
+                
         attributes = dict(position=position, normal=normal)
 
         super().__init__(shader, attributes=attributes, index=index)
 
 
 def fmod1(i, v):
-    if i >= 5:
+    if i >= 0:
         return 1 - abs(2 * v - 1)
     return v
 
@@ -135,6 +132,7 @@ def main():
     # heightmap test with perlin noise
     dim = (100, 100)
     res = (500, 500)
+    reso = max(res)
     ratata = make_random_grid(dim, 0, 1)
     height = np.ndarray(res, float)
     ampl = [.5, 2, 4, 8, 16, 64]
@@ -142,8 +140,8 @@ def main():
 
     for i in range(res[0]):
         for j in range(res[1]):
-            x = i / res[0]
-            y = j / res[0]
+            x = i / reso
+            y = j / reso
             height[i, j] = perlin(ratata, [x, y], ampl, freq, fmod=fmod1) - .5
 
     new_map = HeightMap(height_map_shader, height)
