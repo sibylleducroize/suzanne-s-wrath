@@ -9,7 +9,7 @@ from texture import Texture, Textured
 from transform import normalized, normal_vec
 from math import exp
 
-from land_gen import make_random_grid, perlin
+from land_gen import make_random_grid, perlin, volcano
 
 
 # -------------- Example textured plane class ---------------------------------
@@ -49,7 +49,7 @@ class HeightMap(Mesh):
 
     """ Creates a grid whose x and y coordinates are contained within the render cube.
         The scaling applied is the same on both the x and y axis."""
-    def __init__(self, shader, grid):
+    def __init__(self, shader, grid, **uniforms):
         # grid should be a numpy array
         dim = grid.shape
         dimax = max(dim) - 1
@@ -105,7 +105,7 @@ class HeightMap(Mesh):
                 
         attributes = dict(position=position, normal=normal)
 
-        super().__init__(shader, attributes=attributes, index=index)
+        super().__init__(shader, attributes=attributes, index=index, **uniforms)
 
 
 def fmod1(i, v):
@@ -119,6 +119,7 @@ def main():
     viewer = Viewer()
     shader = Shader("texture.vert", "texture.frag")
     height_map_shader = Shader("height_map_default.vert", "height_map_default.frag")
+    lava_shader = Shader("lava_default.vert", "lava_default.frag")
     
     """
     viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
@@ -131,20 +132,32 @@ def main():
 
     # heightmap test with perlin noise
     dim = (100, 100)
-    res = (500, 500)
+    res = (1000, 1000)
+    crater_rayon = .2
     reso = max(res)
     ratata = make_random_grid(dim, 0, 1)
     height = np.ndarray(res, float)
-    ampl = [.5, 2, 4, 8, 16, 64]
+    ampl = [.5, 2, 4, 8, 8, 8]
     freq = [64, 32, 16, 8, 4, 2]
+    lava_height = .01
 
     for i in range(res[0]):
         for j in range(res[1]):
             x = i / reso
             y = j / reso
-            height[i, j] = perlin(ratata, [x, y], ampl, freq, fmod=fmod1) - .5
+            rayon = (x - .5) ** 2 + (y - .5) ** 2
+            scaled_perlin = (perlin(ratata, [x, y], ampl, freq, fmod=fmod1) - .5) * .4
+            (volc, no) = volcano(rayon, .05, .1, .2)
+            height[i, j] = volc * .3 + (1 - no) * scaled_perlin
 
-    new_map = HeightMap(height_map_shader, height)
+    height_unif = {"lava_height":lava_height}
+    new_map = HeightMap(height_map_shader, height, **height_unif)
+
+    lava_grid = np.ones((2, 2), np.float32)
+    lava_grid *= lava_height
+    lava_map = HeightMap(lava_shader, lava_grid)
+
+    viewer.add(lava_map)
     viewer.add(new_map)
 
     # start rendering loop

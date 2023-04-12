@@ -64,3 +64,14 @@ def perlin(grid, point, amplitudes, frequences, mat_rot = rotation_matrix(1), fm
         p = p @ mat_rot
     
     return res / sum(amplitudes)
+
+
+def volcano(d_squared, crater_diameter, crater_depth, base_diameter):
+    alpha = log(10) * 4 / base_diameter / base_diameter
+    crater_squared = crater_diameter * crater_diameter
+    result = exp(-alpha * d_squared)
+    if d_squared > crater_squared / 4:
+        return (result, result)
+    a = 4 * crater_depth / crater_squared
+    b = exp(-alpha * crater_squared / 4) - a * crater_squared / 4
+    return (a * d_squared + b, result)
