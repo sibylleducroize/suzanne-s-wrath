@@ -5,11 +5,12 @@ import OpenGL.GL as GL              # standard Python OpenGL wrapper
 import glfw                         # lean window system wrapper for OpenGL
 import numpy as np                  # all matrix manipulations & OpenGL args
 from core import Shader, Viewer, Mesh, load
-from texture import Texture, Textured
+from texture import Texture, Textured, CubeTexture
 from transform import normalized, normal_vec
 from math import exp
 
 from land_gen import make_random_grid, perlin, volcano
+import skybox
 
 
 # -------------- Example textured plane class ---------------------------------
@@ -42,6 +43,18 @@ class TexturedPlane(Textured):
         if key in (glfw.KEY_F6, glfw.KEY_F7):
             texture = Texture(self.file, self.wrap, *self.filter)
             self.textures.update(diffuse_map=texture)
+
+
+
+class Skybox(Textured):
+    """Useful for having a textured skybox"""
+    def __init__(self, shader, tex_files):
+        mesh = Mesh(shader, attributes=dict(position=skybox.vertex), index=skybox.index)
+        texture = CubeTexture(tex_files, wrap_mode=GL.GL_CLAMP_TO_EDGE,
+                 mag_filter=GL.GL_LINEAR, min_filter=GL.GL_LINEAR_MIPMAP_LINEAR,
+                 tex_type=GL.GL_TEXTURE_CUBE_MAP)
+        super().__init__(mesh, diffuse_map=texture)
+
 
 
 class HeightMap(Mesh):
@@ -117,22 +130,13 @@ def fmod1(i, v):
 def main():
     """ create a window, add scene objects, then run rendering loop """
     viewer = Viewer()
-    shader = Shader("texture.vert", "texture.frag")
+    skybox_shader = Shader("skybox.vert", "skybox.frag")
     height_map_shader = Shader("height_map_default.vert", "height_map_default.frag")
     lava_shader = Shader("lava_default.vert", "lava_default.frag")
-    
-    """
-    viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
-
-    if len(sys.argv) != 2:
-        print('Usage:\n\t%s [3dfile]*\n\n3dfile\t\t the filename of a model in'
-              ' format supported by assimp.' % (sys.argv[0],))
-        viewer.add(TexturedPlane(shader, "100.png"))
-    """
 
     # heightmap test with perlin noise
     dim = (100, 100)
-    res = (1000, 1000)
+    res = (100, 100)
     crater_rayon = .2
     reso = max(res)
     ratata = make_random_grid(dim, 0, 1)
@@ -157,6 +161,9 @@ def main():
     lava_grid *= lava_height
     lava_map = HeightMap(lava_shader, lava_grid)
 
+    skybox_done = Skybox(skybox_shader, skybox.faces)
+
+    viewer.add(skybox_done)
     viewer.add(lava_map)
     viewer.add(new_map)
 

@@ -32,6 +32,39 @@ class Texture:
         GL.glDeleteTextures(self.glid)
 
 
+class CubeTexture:
+    """ Helper class to create and automatically destroy cubic textures (for skybox) """
+    def __init__(self, tex_files, wrap_mode=GL.GL_CLAMP_TO_EDGE,
+                 mag_filter=GL.GL_LINEAR, min_filter=GL.GL_LINEAR_MIPMAP_LINEAR,
+                 tex_type=GL.GL_TEXTURE_CUBE_MAP):
+        self.glid = GL.glGenTextures(1)
+        self.type = tex_type
+        try:
+            GL.glBindTexture(tex_type, self.glid)
+            for i, tex_file in enumerate(tex_files):
+                # imports images as a np array in exactly right format
+                tex = Image.open(tex_file).convert('RGB')
+                GL.glTexImage2D(GL.GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL.GL_RGB, tex.width, tex.height,
+                                0, GL.GL_RGB, GL.GL_UNSIGNED_BYTE, tex.tobytes())
+            
+            GL.glTexParameteri(tex_type, GL.GL_TEXTURE_WRAP_S, wrap_mode)
+            GL.glTexParameteri(tex_type, GL.GL_TEXTURE_WRAP_T, wrap_mode)
+            GL.glTexParameteri(tex_type, GL.GL_TEXTURE_WRAP_R, wrap_mode)
+            GL.glTexParameteri(tex_type, GL.GL_TEXTURE_MIN_FILTER, min_filter)
+            GL.glTexParameteri(tex_type, GL.GL_TEXTURE_MAG_FILTER, mag_filter)
+            GL.glGenerateMipmap(tex_type)
+            print(f'Loaded texture {" ".join(tex_files)} ({tex.width}x{tex.height}'
+                  f' wrap={str(wrap_mode).split()[0]}'
+                  f' min={str(min_filter).split()[0]}'
+                  f' mag={str(mag_filter).split()[0]})')
+        except FileNotFoundError:
+            print("ERROR: unable to load texture files %s" % ", ".join(tex_files))
+        
+    def __del__(self):  # delete GL texture from GPU when object dies
+        GL.glDeleteTextures(self.glid)
+
+
+
 # -------------- Textured mesh decorator --------------------------------------
 class Textured:
     """ Drawable mesh decorator that activates and binds OpenGL textures """

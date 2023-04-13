@@ -3,6 +3,7 @@
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+
 in vec3 position;
 
 out vec2 frag_tex_coords;
