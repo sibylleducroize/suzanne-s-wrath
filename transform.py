@@ -223,3 +223,39 @@ class Trackball:
         old, new = (normalized(self._project3d(pos)) for pos in (old, new))
         phi = 2 * math.acos(np.clip(np.dot(old, new), -1, 1))
         return quaternion_from_axis_angle(np.cross(old, new), radians=phi)
+
+class LessStupidTrackball:
+    """Je suis toi, mais en mieux ! Aussi, je n'utilise que des notions que les élèves connaissent, à savoir PAS LES QUATERNIONS. Truffer les bases de code de boîtes noires non indispensables comme ça est vraiment une pratique malsaine dans un cadre pédagogique. Que ce soit clair ce débordement résulte de l'accumulation de cas similaires, et pas uniquement de celui_ci, mineur quand on y réfléchit posément. Je pense pouvoir m'exprimer au nom de tous les élèves en écrivant que la masturbation intellectuelle malveillante à laquelle se livrent certains professeurs nous serait égale si elle restait privée. L'ensimag bénéficierait beaucoup de ne pas se reposer uniquement sur la sélection à l'entrée pour garantir la qualité de ses ingénieurs. Un corps enseignant plus enseignant que chercheur pourrait même en faire une bonne école. Le taux d'enseignants chercheurs n'intéresse que les invertébrés qui rédigent le classement de l'Etudiant. PS: pas vous M Chabanas on vous aime, restez svp. OK ça va mieux."""
+    """roll est inutile, par contre changer le point au centre de la rotation de la caméra c'est la base."""
+    """oui j'utlise les commentaires multilignes n'imprte comment. deal with it."""
+
+    def __init__(self, yaw=0, pitch=0, pos=np.array((0, 0, 1, 1), np.float32)):
+        self.pos = pos #position dans le repère monde
+        self.yaw = yaw
+        self.pitch = pitch
+    
+    def view_matrix(self):
+        copi = math.cos(self.pitch)
+        coya = math.cos(self.yaw)
+        sipi = math.sin(self.pitch)
+        siya = math.sin(self.yaw)
+
+        #ça alors on peut tout faire sans quaternions
+        #chuuut les élèves risquent de comprendre et de regagner confiance en eux
+        mat = np.array(((coya , sipi * siya, copi * siya, self.pos[0]),
+                        (0    , copi       , -sipi      , self.pos[1]),
+                        (-siya, sipi * coya, copi * coya, self.pos[2]),
+                        (0    , 0          , 0          , 1          )), np.float32)
+        #sérieusement on a tous fait 4 ans d'algèbre linéaire vous abusez
+        
+        return np.linalg.inv(mat)
+
+    def projection_matrix(self, winsize):
+        return perspective(35, winsize[0] / winsize[1], .01, 1000)
+    
+    def move(self, dp):
+        self.pos[:3] += dp @ self.view_matrix()[:3, :3]
+    
+    def rotate(self, old, new):
+        self.yaw -= (new[0] - old[0]) * .001
+        self.pitch += (new[1] - old[1]) * .001

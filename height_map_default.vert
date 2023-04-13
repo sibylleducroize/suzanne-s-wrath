@@ -7,6 +7,7 @@ in vec3 normal;
 // global matrix variables
 uniform mat4 view;
 uniform mat4 projection;
+uniform vec3 camera_position;
 
 // interpolated color for fragment shader, intialized at vertices
 out vec3 fragment_color;
@@ -16,7 +17,7 @@ out vec3 fragment_position;
 void main() {
     // initialize interpolated colors at vertices
     vec3 base_color;
-    if (normal.z < .8) {
+    if (normal.y < .8) {
         base_color = vec3(.3, .3, .3);
     }
     else {

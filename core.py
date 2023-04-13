@@ -10,7 +10,7 @@ import numpy as np                  # all matrix manipulations & OpenGL args
 import assimpcy                     # 3D resource loader
 
 # our transform functions
-from transform import Trackball, identity
+from transform import Trackball, identity, LessStupidTrackball
 
 # initialize and automatically terminate glfw on exit
 glfw.init()
@@ -349,12 +349,14 @@ class Viewer(Node):
         glfw.make_context_current(self.win)
 
         # initialize trackball
-        self.trackball = Trackball()
+        # self.trackball = Trackball() ça c'est nul j'enlève
+        self.trackball = LessStupidTrackball()
         self.mouse = (0, 0)
 
         # register event handlers
         glfw.set_key_callback(self.win, self.on_key)
         glfw.set_cursor_pos_callback(self.win, self.on_mouse_move)
+        glfw.set_mouse_button_callback(self.win, self.on_mouse_click)
         glfw.set_scroll_callback(self.win, self.on_scroll)
         glfw.set_window_size_callback(self.win, self.on_size)
 
@@ -371,6 +373,8 @@ class Viewer(Node):
         # cyclic iterator to easily toggle polygon rendering modes
         self.fill_modes = cycle([GL.GL_LINE, GL.GL_POINT, GL.GL_FILL])
 
+        self.sticky_cursor = False
+
     def run(self):
         """ Main render loop for this OpenGL window """
         while not glfw.window_should_close(self.win):
@@ -380,11 +384,11 @@ class Viewer(Node):
             win_size = glfw.get_window_size(self.win)
 
             # draw our scene objects
-            cam_pos = np.linalg.inv(self.trackball.view_matrix())[:, 3]
+            cam_pos = self.trackball.pos
             self.draw(view=self.trackball.view_matrix(),
                       projection=self.trackball.projection_matrix(win_size),
                       model=identity(),
-                      w_camera_position=cam_pos)
+                      camera_position=cam_pos)
 
             # flush render commands, and swap draw buffers
             glfw.swap_buffers(self.win)
@@ -393,15 +397,27 @@ class Viewer(Node):
             glfw.poll_events()
 
     def on_key(self, _win, key, _scancode, action, _mods):
+        move_speed = .01
         """ 'Q' or 'Escape' quits """
         if action == glfw.PRESS or action == glfw.REPEAT:
-            if key == glfw.KEY_ESCAPE or key == glfw.KEY_Q:
+            if key == glfw.KEY_ESCAPE:
                 glfw.set_window_should_close(self.win, True)
-            if key == glfw.KEY_W:
+            if key == glfw.KEY_P:
                 GL.glPolygonMode(GL.GL_FRONT_AND_BACK, next(self.fill_modes))
-            if key == glfw.KEY_SPACE:
+            if key == glfw.KEY_R:
                 glfw.set_time(0.0)
-
+            if key == glfw.KEY_W:
+                self.trackball.move(np.array((0, 0, -move_speed), np.float32))
+            if key == glfw.KEY_S:
+                self.trackball.move(np.array((0, 0, move_speed), np.float32))
+            if key == glfw.KEY_D:
+                self.trackball.move(np.array((move_speed, 0, 0), np.float32))
+            if key == glfw.KEY_A:
+                self.trackball.move(np.array((-move_speed, 0, 0), np.float32))
+            if key == glfw.KEY_Q:
+                self.trackball.move(np.array((0, -move_speed, 0), np.float32))
+            if key == glfw.KEY_E:
+                self.trackball.move(np.array((0, move_speed, 0), np.float32))
             # call Node.key_handler which calls key_handlers for all drawables
             self.key_handler(key)
 
@@ -409,15 +425,26 @@ class Viewer(Node):
         """ Rotate on left-click & drag, pan on right-click & drag """
         old = self.mouse
         self.mouse = (xpos, glfw.get_window_size(win)[1] - ypos)
-        if glfw.get_mouse_button(win, glfw.MOUSE_BUTTON_LEFT):
-            self.trackball.drag(old, self.mouse, glfw.get_window_size(win))
-        if glfw.get_mouse_button(win, glfw.MOUSE_BUTTON_RIGHT):
-            self.trackball.pan(old, self.mouse)
+        if self.sticky_cursor:
+            self.trackball.rotate(old, self.mouse)
+
+        #beurk pas beau
+        """if glfw.get_mouse_button(win, glfw.MOUSE_BUTTON_RIGHT):
+            self.trackball.pan(old, self.mouse)"""
 
     def on_scroll(self, win, _deltax, deltay):
         """ Scroll controls the camera distance to trackball center """
-        self.trackball.zoom(deltay, glfw.get_window_size(win)[1])
+        #non self.trackball.zoom(deltay, glfw.get_window_size(win)[1])
 
     def on_size(self, _win, _width, _height):
         """ window size update => update viewport to new framebuffer size """
         GL.glViewport(0, 0, *glfw.get_framebuffer_size(self.win))
+    
+    def on_mouse_click(self, win, button, action, mods):
+        if button == glfw.MOUSE_BUTTON_LEFT and action == glfw.PRESS:
+            self.sticky_cursor = not(self.sticky_cursor)
+            if self.sticky_cursor:
+                glfw.set_input_mode(win, glfw.CURSOR, glfw.CURSOR_DISABLED)
+            else:
+                glfw.set_input_mode(win, glfw.CURSOR, glfw.CURSOR_NORMAL)
+

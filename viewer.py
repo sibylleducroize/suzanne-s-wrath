@@ -48,7 +48,7 @@ class HeightMap(Mesh):
     """ HeighMap, with z the vertical axis """
 
     """ Creates a grid whose x and y coordinates are contained within the render cube.
-        The scaling applied is the same on both the x and y axis."""
+        The scaling applied is the same on both the x and z axis."""
     def __init__(self, shader, grid, **uniforms):
         # grid should be a numpy array
         dim = grid.shape
@@ -60,8 +60,8 @@ class HeightMap(Mesh):
         for i in range(dim[0]):
             for j in range(dim[1]):
                 x = i * ratio - 1
-                y = j * ratio - 1
-                z = grid[i, j]
+                z = j * ratio - 1
+                y = grid[i, j]
                 point = (x, y, z)
                 vertex_list.append(point)
         
@@ -82,8 +82,8 @@ class HeightMap(Mesh):
                     if k == 2:
                         index_list.append(y + dim[1] * x)
                     dp = (k + orientation) % 2
-                    dx = (dx + dp + 1) % 2
-                    dy = (dy + dp) % 2
+                    dx = (dx + dp) % 2
+                    dy = (dy + dp + 1) % 2
 
         index = np.array(index_list, np.uint32)
         
@@ -140,6 +140,9 @@ def main():
     ampl = [.5, 2, 4, 8, 8, 8]
     freq = [64, 32, 16, 8, 4, 2]
     lava_height = .01
+    fog_strength = .3
+    max_fog = 1
+    fog_height = .3
 
     for i in range(res[0]):
         for j in range(res[1]):
@@ -150,12 +153,13 @@ def main():
             (volc, no) = volcano(rayon, .05, .1, .2)
             height[i, j] = volc * .3 + (1 - no) * scaled_perlin
 
-    height_unif = {"lava_height":lava_height}
+    height_unif = {"lava_height":lava_height, "fog_strength":fog_strength, "max_fog":max_fog, "fog_height":fog_height}
     new_map = HeightMap(height_map_shader, height, **height_unif)
 
     lava_grid = np.ones((2, 2), np.float32)
     lava_grid *= lava_height
-    lava_map = HeightMap(lava_shader, lava_grid)
+    lava_unif = {"fog_strength":fog_strength, "max_fog":max_fog}
+    lava_map = HeightMap(lava_shader, lava_grid, **lava_unif)
 
     viewer.add(lava_map)
     viewer.add(new_map)
