@@ -9,7 +9,6 @@ uniform float fog_height;
 uniform vec3 camera_position;
 
 // receiving interpolated color for fragment shader
-in vec3 fragment_color;
 in vec3 fragment_normal;
 in vec3 fragment_position;
 
@@ -19,9 +18,22 @@ out vec4 out_color;
 void main() {
     //out_color = vec4(fragment_color + global_color, 1);
     
+    vec3 base_color;
+    if (fragment_normal.y < .8) {
+        base_color = vec3(.3, .3, .3);
+    }
+    //else if(fragment_normal.y < .9) {
+    //    float t = (fragment_normal.y - .8) / .1;
+    //    base_color = (1 - t) * vec3(.3, .3, .3) + t * vec3(.5, .5, .5);
+    //}
+    else {
+        base_color = vec3(.5, .5, .5);
+    }
+
+
     float intensity = dot(fragment_normal, normalize(vec3(1, 1, 0)));
     float redtensity = exp(-3000 * (fragment_position.y - lava_height) * (fragment_position.y - lava_height));
-    vec4 color = vec4(intensity * fragment_color, 1);
+    vec4 color = vec4(intensity * base_color, 1);
     color.x += redtensity;
 
     float depth = 0;
