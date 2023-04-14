@@ -108,6 +108,36 @@ class HeightMap(Mesh):
         super().__init__(shader, attributes=attributes, index=index, **uniforms)
 
 
+class Skaibocs(Textured):
+    """ I am have cancer """
+
+    def __init__(self, shader):
+        position = 100 * np.array(((-1, -1, -1), (1, -1, -1), (1, 1, -1), (-1, 1, -1),
+                             (-1, -1, 1), (1, -1, 1), (1, 1, 1), (-1, 1, 1),
+                             (-1, -1, -1), (-1, 1, -1),
+                             (1, 1, -1), (1, 1, 1),
+                             (1, -1, -1), (1, -1, 1)), np.float32)
+        index = np.array((0, 1, 2, 2, 3, 0,
+                          7, 6, 5, 5, 4, 7,
+                          1, 5, 6, 6, 2, 1,
+                          4, 8, 9, 9, 7, 4,
+                          7, 9, 10, 10, 11, 7,
+                          8, 4, 13, 13, 12, 8), np.uint32)
+
+        q = .25
+        t = 1/3
+        marge = 0.0001
+        uv_map = np.array(((0, 2 * t - marge), (q, 2 * t - marge), (q, t + marge), (0, t + marge),
+                           (3 * q, 2 * t - marge), (2 * q, 2 * t - marge), (2 * q, t + marge), (3 * q, t + marge),
+                           (4 * q, 2 * t), (4 * q, t),
+                           (1, 0), (3 * q, 0),
+                           (1, 1), (3 * q, 1)), np.float32)
+        tex = Texture("sabock2.png")
+        attributes = dict(position=position, tex_coord=uv_map)
+        mesh = Mesh(shader, attributes=attributes, index=index)
+
+        super().__init__(mesh, test_texure=tex)
+
 def fmod1(i, v):
     if i >= 0:
         return 1 - abs(2 * v - 1)
@@ -120,6 +150,7 @@ def main():
     shader = Shader("texture.vert", "texture.frag")
     height_map_shader = Shader("height_map_default.vert", "height_map_default.frag")
     lava_shader = Shader("lava_default.vert", "lava_default.frag")
+    test_shader = Shader("text_default.vert", "text_default.frag")
     
     """
     viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
@@ -132,7 +163,7 @@ def main():
 
     # heightmap test with perlin noise
     dim = (100, 100)
-    res = (1000, 1000)
+    res = (100, 100)
     crater_rayon = .2
     reso = max(res)
     ratata = make_random_grid(dim, 0, 1)
@@ -161,6 +192,9 @@ def main():
     lava_unif = {"fog_strength":fog_strength, "max_fog":max_fog}
     lava_map = HeightMap(lava_shader, lava_grid, **lava_unif)
 
+    test_sky_box = Skaibocs(test_shader)
+
+    viewer.add(test_sky_box)
     viewer.add(lava_map)
     viewer.add(new_map)
 

@@ -229,7 +229,7 @@ class LessStupidTrackball:
     """roll est inutile, par contre changer le point au centre de la rotation de la caméra c'est la base."""
     """oui j'utlise les commentaires multilignes n'imprte comment. deal with it."""
 
-    def __init__(self, yaw=0, pitch=0, pos=np.array((0, 0, 1, 1), np.float32)):
+    def __init__(self, yaw=0, pitch=0, pos=np.array((0, .5, 1, 1), np.float32)):
         self.pos = pos #position dans le repère monde
         self.yaw = yaw
         self.pitch = pitch
