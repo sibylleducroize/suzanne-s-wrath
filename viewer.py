@@ -147,21 +147,11 @@ def fmod1(i, v):
 def main():
     """ create a window, add scene objects, then run rendering loop """
     viewer = Viewer()
-    shader = Shader("texture.vert", "texture.frag")
     height_map_shader = Shader("height_map_default.vert", "height_map_default.frag")
     lava_shader = Shader("lava_default.vert", "lava_default.frag")
     test_shader = Shader("text_default.vert", "text_default.frag")
-    
-    """
-    viewer.add(*[mesh for file in sys.argv[1:] for mesh in load(file, shader)])
 
-    if len(sys.argv) != 2:
-        print('Usage:\n\t%s [3dfile]*\n\n3dfile\t\t the filename of a model in'
-              ' format supported by assimp.' % (sys.argv[0],))
-        viewer.add(TexturedPlane(shader, "100.png"))
-    """
-
-    # heightmap test with perlin noise
+    # heightmap with perlin noise
     dim = (100, 100)
     res = (100, 100)
     crater_rayon = .2
@@ -187,11 +177,13 @@ def main():
     height_unif = {"lava_height":lava_height, "fog_strength":fog_strength, "max_fog":max_fog, "fog_height":fog_height}
     new_map = HeightMap(height_map_shader, height, **height_unif)
 
+    #lava
     lava_grid = np.ones((2, 2), np.float32)
     lava_grid *= lava_height
     lava_unif = {"fog_strength":fog_strength, "max_fog":max_fog}
     lava_map = HeightMap(lava_shader, lava_grid, **lava_unif)
 
+    #skybox
     test_sky_box = Skaibocs(test_shader)
 
     viewer.add(test_sky_box)

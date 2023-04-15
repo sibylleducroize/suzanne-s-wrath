@@ -178,7 +178,7 @@ def quaternion_slerp(q0, q1, fraction):
 
 # a trackball class based on provided quaternion functions -------------------
 class Trackball:
-    """Virtual trackball for 3D scene viewing. Independent of window system."""
+    """Virtual trackball for 3D scene viewing. Independent of window system. Not actually good, just here to flex on the students."""
 
     def __init__(self, yaw=0., roll=0., pitch=0., distance=3., radians=None):
         """ Build a new trackball with specified view, angles in degrees """
@@ -225,12 +225,12 @@ class Trackball:
         return quaternion_from_axis_angle(np.cross(old, new), radians=phi)
 
 class LessStupidTrackball:
-    """Je suis toi, mais en mieux ! Aussi, je n'utilise que des notions que les élèves connaissent, à savoir PAS LES QUATERNIONS. Truffer les bases de code de boîtes noires non indispensables comme ça est vraiment une pratique malsaine dans un cadre pédagogique. Que ce soit clair ce débordement résulte de l'accumulation de cas similaires, et pas uniquement de celui_ci, mineur quand on y réfléchit posément. Je pense pouvoir m'exprimer au nom de tous les élèves en écrivant que la masturbation intellectuelle malveillante à laquelle se livrent certains professeurs nous serait égale si elle restait privée. L'ensimag bénéficierait beaucoup de ne pas se reposer uniquement sur la sélection à l'entrée pour garantir la qualité de ses ingénieurs. Un corps enseignant plus enseignant que chercheur pourrait même en faire une bonne école. Le taux d'enseignants chercheurs n'intéresse que les invertébrés qui rédigent le classement de l'Etudiant. PS: pas vous M Chabanas on vous aime, restez svp. OK ça va mieux."""
+    """Je suis toi, mais en mieux ! Aussi, je n'utilise que des notions que les élèves connaissent, à savoir PAS LES QUATERNIONS."""
     """roll est inutile, par contre changer le point au centre de la rotation de la caméra c'est la base."""
-    """oui j'utlise les commentaires multilignes n'imprte comment. deal with it."""
 
     def __init__(self, yaw=0, pitch=0, pos=np.array((0, .5, 1, 1), np.float32)):
-        self.pos = pos #position dans le repère monde
+        """ Position in world coordinates, orientations in camera referential. """
+        self.pos = pos
         self.yaw = yaw
         self.pitch = pitch
     
@@ -246,7 +246,9 @@ class LessStupidTrackball:
                         (0    , copi       , -sipi      , self.pos[1]),
                         (-siya, sipi * coya, copi * coya, self.pos[2]),
                         (0    , 0          , 0          , 1          )), np.float32)
-        #sérieusement on a tous fait 4 ans d'algèbre linéaire vous abusez
+        #en plus c'est plus rapide à l'exécution..........
+        #classique squelette de code de l'ensimag en fait
+        #disclaimer: ce sel a été accumulé sur plusieurs projets
         
         return np.linalg.inv(mat)
 
@@ -254,7 +256,7 @@ class LessStupidTrackball:
         return perspective(80, winsize[0] / winsize[1], .01, 1000)
     
     def move(self, dp):
-        self.pos[:3] += dp @ self.view_matrix()[:3, :3]
+        self.pos[:3] += dp @ self.view_matrix()[:3, :3] #  :3
     
     def rotate(self, old, new):
         self.yaw -= (new[0] - old[0]) * .001
