@@ -128,11 +128,11 @@ class Skaibocs(Textured):
         t = 1/3
         marge = 0.0001
         uv_map = np.array(((0, 2 * t - marge), (q, 2 * t - marge), (q, t + marge), (0, t + marge),
-                           (3 * q, 2 * t - marge), (2 * q, 2 * t - marge), (2 * q, t + marge), (3 * q, t + marge),
+                           (3 * q + marge, 2 * t - marge), (2 * q, 2 * t - marge), (2 * q, t + marge), (3 * q + marge, t + marge),
                            (4 * q, 2 * t), (4 * q, t),
-                           (1, 0), (3 * q, 0),
-                           (1, 1), (3 * q, 1)), np.float32)
-        tex = Texture("sabock2.png")
+                           (1 + marge, 0), (3 * q + marge, 0),
+                           (1 + marge, 1), (3 * q + marge, 1)), np.float32)
+        tex = Texture("skabock4.jpg", GL.GL_CLAMP_TO_EDGE)
         attributes = dict(position=position, tex_coord=uv_map)
         mesh = Mesh(shader, attributes=attributes, index=index)
 

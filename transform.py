@@ -251,7 +251,7 @@ class LessStupidTrackball:
         return np.linalg.inv(mat)
 
     def projection_matrix(self, winsize):
-        return perspective(35, winsize[0] / winsize[1], .01, 1000)
+        return perspective(80, winsize[0] / winsize[1], .01, 1000)
     
     def move(self, dp):
         self.pos[:3] += dp @ self.view_matrix()[:3, :3]
