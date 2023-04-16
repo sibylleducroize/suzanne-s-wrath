@@ -114,7 +114,7 @@ def lookat(eye, target, up):
     up = np.cross(right, view)
     rotation = np.identity(4)
     rotation[:3, :3] = np.vstack([right, up, -view])
-    return rotation @ translate(-eye)
+    return rotation #@ translate(-eye)
 
 
 # quaternion functions -------------------------------------------------------

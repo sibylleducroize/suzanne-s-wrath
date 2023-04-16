@@ -6,8 +6,9 @@ import glfw                         # lean window system wrapper for OpenGL
 import numpy as np                  # all matrix manipulations & OpenGL args
 from core import Shader, Viewer, Mesh, load
 from texture import Texture, Textured
-from transform import normalized, normal_vec
-from math import exp
+from transform import normalized, normal_vec, translate, scale, identity, lookat
+from math import exp, pi
+from random import uniform
 
 from land_gen import make_random_grid, perlin, volcano
 
@@ -49,7 +50,7 @@ class HeightMap(Mesh):
 
     """ Creates a grid whose x and y coordinates are contained within the render cube.
         The scaling applied is the same on both the x and z axis."""
-    def __init__(self, shader, grid, **uniforms):
+    def __init__(self, shader, grid, bonus_attrib=None, usage=GL.GL_STATIC_DRAW, **uniforms):
         # grid should be a numpy array
         dim = grid.shape
         dimax = max(dim) - 1
@@ -104,9 +105,44 @@ class HeightMap(Mesh):
             normal[i] = normalized(normal[i])
                 
         attributes = dict(position=position, normal=normal)
+        if bonus_attrib != None:
+            attributes[bonus_attrib[0]] = bonus_attrib[1]
 
-        super().__init__(shader, attributes=attributes, index=index, **uniforms)
+        super().__init__(shader, attributes=attributes, index=index, usage=usage, **uniforms)
 
+
+class Lava():
+    def __init__(self, shader, viewer, **unifs):
+        self.dim = (2, 2)
+        self.speed = .01
+        self.len = self.dim[0] * self.dim[1]
+        self.unif = unifs
+        self.viewer = viewer
+        text = Texture("gud.png", GL.GL_REPEAT)
+        lava_map = unifs.get("lava_height") * np.ones(self.dim, np.float32)
+        self.uvmap = []
+        for i in range(self.len):
+            self.uvmap.append((i % 2, i // 2))
+        self.uvmap = 10 * np.array(self.uvmap, np.float32)
+        drawable = HeightMap(shader, lava_map, bonus_attrib=("uv_map", self.uvmap), **unifs)
+        self.time = 0
+        self.drawable = Textured(drawable, lava_tex=text)
+
+    
+    def draw(self, **balec):
+        nt = self.viewer.time
+        dt = nt - self.time
+        self.time = nt
+        p = self.speed * self.time
+
+        t1 = np.matrix(((1, 0, p),
+                        (0, 1, 0),
+                        (0, 0, 1)))
+        t2 = np.matrix(((1/pi, 0, -p),
+                        (0, 1/pi, 0),
+                        (0, 0, 1)))
+
+        self.drawable.draw(trans1=t1, trans2=t2, **balec)
 
 class Skaibocs(Textured):
     """ I am have cancer """
@@ -138,6 +174,45 @@ class Skaibocs(Textured):
 
         super().__init__(mesh, test_texure=tex)
 
+
+class Particle:
+    def __init__(self, drawable, speed):
+        self.drawable = drawable
+        self.pos = np.array((uniform(-1, 1), uniform(0, 1), uniform(-1, 1)), np.float32)
+        self.speed = speed
+        self.up = np.array((0, 1, 0), np.float32)
+    
+    def update(self, dt):
+        self.pos[1] -= self.speed * dt
+        if self.pos[1] < 0:
+            self.pos[1] = 1
+            self.pos[0], self.pos[2] = uniform(-1, 1), uniform(-1, 1)
+        
+    def draw(self, dt, **kws):
+        self.update(dt)
+        self.drawable.draw(part_pos = self.pos, **kws)
+
+
+class Ashes:
+    def __init__(self, shader, number, size, viewer, **kws):
+        self.particle_list = np.ndarray((number), Particle)
+        position = size * np.array(((0, 0, 0), (0, -1, 0), (1, 0, 0), (0, 1, 0), (-1, 0, 0)), np.float32)
+        index = np.array((0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1))
+        attributes = dict(position=position)
+        losange = Mesh(shader, attributes=attributes, index=index)
+        for i in range(number):
+            self.particle_list[i] = Particle(losange, uniform(.01, .1))
+        self.time = 0
+        self.kws = kws
+        self.viewer = viewer
+        
+    def draw(self, **kws):
+        dt = self.viewer.time - self.time
+        self.time = self.viewer.time
+        for part in self.particle_list:
+            part.draw(dt, **kws, **self.kws)
+
+
 def fmod1(i, v):
     if i >= 0:
         return 1 - abs(2 * v - 1)
@@ -150,10 +225,12 @@ def main():
     height_map_shader = Shader("height_map_default.vert", "height_map_default.frag")
     lava_shader = Shader("lava_default.vert", "lava_default.frag")
     test_shader = Shader("text_default.vert", "text_default.frag")
+    ashes_shader = Shader("ashes_default.vert", "ashes_default.frag")
+    lava_shader2 = Shader("lava2.vert", "lava2.frag")
 
     # heightmap with perlin noise
     dim = (100, 100)
-    res = (100, 100)
+    res = (1000, 1000)
     crater_rayon = .2
     reso = max(res)
     ratata = make_random_grid(dim, 0, 1)
@@ -178,10 +255,13 @@ def main():
     new_map = HeightMap(height_map_shader, height, **height_unif)
 
     #lava
-    lava_grid = np.ones((2, 2), np.float32)
-    lava_grid *= lava_height
-    lava_unif = {"fog_strength":fog_strength, "max_fog":max_fog}
-    lava_map = HeightMap(lava_shader, lava_grid, **lava_unif)
+    #lava_grid = np.ones((2, 2), np.float32)
+    #lava_grid *= lava_height
+    #lava_unif = {"fog_strength":fog_strength, "max_fog":max_fog}
+    #lava_map = HeightMap(lava_shader, lava_grid, **lava_unif)
+    lava_map = Lava(lava_shader2, viewer, lava_height=lava_height, fog_strength=fog_strength, max_fog=max_fog, fog_height=fog_height)
+    viewer.add(lava_map)
+    
 
     #skybox
     test_sky_box = Skaibocs(test_shader)
@@ -189,6 +269,10 @@ def main():
     viewer.add(test_sky_box)
     viewer.add(lava_map)
     viewer.add(new_map)
+
+    #ashes
+    ashes = Ashes(ashes_shader, 400, .0015, viewer, **height_unif)
+    viewer.add(ashes)
 
     # start rendering loop
     viewer.run()

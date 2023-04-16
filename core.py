@@ -374,11 +374,14 @@ class Viewer(Node):
         self.fill_modes = cycle([GL.GL_LINE, GL.GL_POINT, GL.GL_FILL])
 
         self.sticky_cursor = False
+        self.time = 0
 
     def run(self):
         """ Main render loop for this OpenGL window """
+        glfw.set_time(0)
         while not glfw.window_should_close(self.win):
             # clear draw buffer and depth buffer (<-TP2)
+            self.time = glfw.get_time()
             GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 
             win_size = glfw.get_window_size(self.win)
